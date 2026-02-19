@@ -59,6 +59,12 @@ export default function TabLayout() {
       color: colors.primary,
     },
     {
+      title: "Port Manager",
+      icon: "lan",
+      route: "/ports",
+      color: colors.info,
+    },
+    {
       title: t("nav.settings"),
       icon: "cog",
       route: "/(tabs)/settings",
@@ -174,7 +180,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="menu"
           options={{
-            title: "Menu",
+            title: t("common.more"),
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons
                 name="dots-grid"

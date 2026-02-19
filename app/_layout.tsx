@@ -98,18 +98,50 @@ function RootLayoutNav() {
   );
 }
 
+import {
+  ThemeProvider as NavThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+} from "@react-navigation/native";
+
+import * as SystemUI from "expo-system-ui";
+
 function ThemedApp() {
-  const { paperTheme } = useAppTheme();
+  const { paperTheme, isDark, colors } = useAppTheme();
+
+  // Update system background color to match theme
+  // This prevents white flashes on navigation transitions
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(colors.background);
+  }, [colors.background]);
+
+  // Adapt our custom theme to React Navigation theme
+  const navigationTheme = {
+    dark: isDark,
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.card,
+      text: colors.text,
+      border: colors.border,
+      notification: colors.error,
+    },
+    fonts: isDark ? DarkTheme.fonts : DefaultTheme.fonts,
+  };
+
   return (
     <PaperProvider theme={paperTheme}>
-      <AuthProvider>
-        <ServerProvider>
-          <NotificationProvider>
-            <NetworkMonitor />
-            <RootLayoutNav />
-          </NotificationProvider>
-        </ServerProvider>
-      </AuthProvider>
+      <NavThemeProvider value={navigationTheme}>
+        <AuthProvider>
+          <ServerProvider>
+            <NotificationProvider>
+              <NetworkMonitor />
+              <RootLayoutNav />
+            </NotificationProvider>
+          </ServerProvider>
+        </AuthProvider>
+      </NavThemeProvider>
     </PaperProvider>
   );
 }

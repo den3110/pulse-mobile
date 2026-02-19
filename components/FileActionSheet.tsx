@@ -30,7 +30,9 @@ interface FileActionSheetProps {
   onZip?: (file: FileEntry) => void;
   onUnzip?: (file: FileEntry) => void;
   onProperties?: (file: FileEntry) => void;
+  onEdit?: (file: FileEntry) => void;
   onPreview?: (file: FileEntry) => void;
+  onTerminal?: (file: FileEntry) => void;
 }
 
 export default function FileActionSheet({
@@ -49,7 +51,9 @@ export default function FileActionSheet({
   onZip,
   onUnzip,
   onProperties,
+  onEdit,
   onPreview,
+  onTerminal,
 }: FileActionSheetProps) {
   const { colors } = useAppTheme();
 
@@ -94,16 +98,26 @@ export default function FileActionSheet({
         />
 
         {!isDir && (
-          <List.Item
-            title="Preview / Edit"
-            left={(props) => (
-              <List.Icon {...props} icon="file-document-edit-outline" />
-            )}
-            onPress={() => {
-              onDismiss();
-              onPreview && onPreview(file);
-            }}
-          />
+          <>
+            <List.Item
+              title="Edit"
+              left={(props) => (
+                <List.Icon {...props} icon="file-document-edit-outline" />
+              )}
+              onPress={() => {
+                onDismiss();
+                onEdit && onEdit(file);
+              }}
+            />
+            <List.Item
+              title="Preview"
+              left={(props) => <List.Icon {...props} icon="eye-outline" />}
+              onPress={() => {
+                onDismiss();
+                onPreview && onPreview(file);
+              }}
+            />
+          </>
         )}
 
         {!isDir && onDownload && (
@@ -189,6 +203,17 @@ export default function FileActionSheet({
           onPress={() => {
             onDismiss();
             onToggleBookmark && onToggleBookmark(file);
+          }}
+        />
+
+        <Divider style={{ marginVertical: 5 }} />
+
+        <List.Item
+          title="Open Terminal Here"
+          left={(props) => <List.Icon {...props} icon="console" />}
+          onPress={() => {
+            onDismiss();
+            onTerminal && onTerminal(file);
           }}
         />
 

@@ -238,7 +238,7 @@ export default function ServerDetailScreen() {
                 <MaterialCommunityIcons
                   name="server"
                   size={28}
-                  color={statusColor(server.status)}
+                  color={statusColor(server.status, colors)}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -249,9 +249,11 @@ export default function ServerDetailScreen() {
               </View>
               <Chip
                 compact
-                style={{ backgroundColor: statusColor(server.status) + "20" }}
+                style={{
+                  backgroundColor: statusColor(server.status, colors) + "20",
+                }}
                 textStyle={{
-                  color: statusColor(server.status),
+                  color: statusColor(server.status, colors),
                   fontWeight: "700",
                 }}
               >
@@ -382,7 +384,10 @@ export default function ServerDetailScreen() {
                   </View>
                   <Chip
                     compact
-                    textStyle={{ fontSize: 10, color: statusColor(p.status) }}
+                    textStyle={{
+                      fontSize: 10,
+                      color: statusColor(p.status, colors),
+                    }}
                   >
                     {p.status}
                   </Chip>
@@ -667,9 +672,17 @@ const createStyles = (Colors: any) =>
       paddingVertical: 10,
       borderBottomWidth: 0.5,
       borderBottomColor: Colors.border,
+      alignItems: "flex-start",
     },
     infoLabel: { fontSize: 14, color: Colors.textSecondary },
-    infoValue: { fontSize: 14, color: Colors.text, fontWeight: "600" },
+    infoValue: {
+      fontSize: 14,
+      color: Colors.text,
+      fontWeight: "600",
+      flex: 1,
+      textAlign: "right",
+      marginLeft: 16,
+    },
     projectItem: {
       flexDirection: "row",
       alignItems: "center",

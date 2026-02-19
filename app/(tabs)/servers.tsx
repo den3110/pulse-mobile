@@ -144,7 +144,7 @@ export default function ServersScreen() {
         <View
           style={[
             styles.statusDot,
-            { backgroundColor: statusColor(item.status) },
+            { backgroundColor: statusColor(item.status, colors) },
           ]}
         />
         <View style={{ flex: 1 }}>
@@ -167,10 +167,10 @@ export default function ServersScreen() {
         <Chip
           style={[
             styles.statusChip,
-            { backgroundColor: statusColor(item.status) + "20" },
+            { backgroundColor: statusColor(item.status, colors) + "20" },
           ]}
           textStyle={{
-            color: statusColor(item.status),
+            color: statusColor(item.status, colors),
             fontSize: 11,
             lineHeight: 16,
             fontWeight: "700",

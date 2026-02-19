@@ -152,7 +152,6 @@ export default function PM2ManagerScreen() {
     return () => clearInterval(interval);
   }, [fetchProcesses]);
 
-  // Auto-refresh logs
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (logVisible && autoRefreshLogs && currentLogProc) {
@@ -162,6 +161,16 @@ export default function PM2ManagerScreen() {
     }
     return () => clearInterval(interval);
   }, [logVisible, autoRefreshLogs, currentLogProc]);
+
+  const logScrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (logVisible && logContent && logScrollRef.current) {
+      setTimeout(() => {
+        logScrollRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+    }
+  }, [logVisible, logContent]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -777,7 +786,7 @@ export default function PM2ManagerScreen() {
               <ActivityIndicator color="#fff" />
             </View>
           ) : (
-            <ScrollView style={styles.logScroll}>
+            <ScrollView style={styles.logScroll} ref={logScrollRef}>
               <Text style={styles.logText}>
                 {logContent || "No logs found."}
               </Text>

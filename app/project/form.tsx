@@ -15,6 +15,7 @@ import {
   Switch,
   ActivityIndicator,
   IconButton,
+  SegmentedButtons,
 } from "react-native-paper";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -43,6 +44,9 @@ export default function ProjectFormScreen() {
   const [startCommand, setStartCommand] = useState("npm start");
   const [stopCommand, setStopCommand] = useState("");
   const [autoDeploy, setAutoDeploy] = useState(false);
+  const [processManager, setProcessManager] = useState<"nohup" | "pm2">(
+    "nohup",
+  );
   const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([]);
   const [servers, setServers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,6 +72,7 @@ export default function ProjectFormScreen() {
           setStartCommand(p.startCommand || "npm start");
           setStopCommand(p.stopCommand || "");
           setAutoDeploy(p.autoDeploy || false);
+          setProcessManager(p.processManager || "nohup");
           if (p.envVars) {
             setEnvVars(
               Object.entries(p.envVars).map(([key, value]) => ({
@@ -135,6 +140,7 @@ export default function ProjectFormScreen() {
         startCommand,
         stopCommand,
         autoDeploy,
+        processManager,
         envVars: envObj,
       };
 
@@ -324,6 +330,27 @@ export default function ProjectFormScreen() {
             textColor={Colors.text}
             theme={inputTheme}
           />
+
+          <View style={{ marginVertical: 8 }}>
+            <Text style={styles.label}>Process Manager</Text>
+            <SegmentedButtons
+              value={processManager}
+              onValueChange={(val) => setProcessManager(val as "nohup" | "pm2")}
+              buttons={[
+                {
+                  value: "nohup",
+                  label: "Nohup",
+                  showSelectedCheck: true,
+                },
+                {
+                  value: "pm2",
+                  label: "PM2",
+                  showSelectedCheck: true,
+                },
+              ]}
+              style={{ marginTop: 8 }}
+            />
+          </View>
 
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>{t("projects.autoDeploy")}</Text>

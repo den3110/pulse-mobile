@@ -351,9 +351,11 @@ export default function ProjectDetailScreen() {
               </View>
               <Chip
                 compact
-                style={{ backgroundColor: statusColor(project.status) + "20" }}
+                style={{
+                  backgroundColor: statusColor(project.status, colors) + "20",
+                }}
                 textStyle={{
-                  color: statusColor(project.status),
+                  color: statusColor(project.status, colors),
                   fontWeight: "700",
                 }}
               >
@@ -534,7 +536,7 @@ export default function ProjectDetailScreen() {
                   <Chip
                     compact
                     textStyle={{
-                      color: statusColor(dep.status),
+                      color: statusColor(dep.status, colors),
                       fontSize: 10,
                       fontWeight: "700",
                     }}

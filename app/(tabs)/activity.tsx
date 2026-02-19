@@ -31,20 +31,6 @@ const actionIcon: Record<string, string> = {
   start: "play-circle",
 };
 
-const actionColor: Record<string, string> = {
-  deploy: Colors.primary,
-  stop: Colors.error,
-  restart: Colors.warning,
-  create: Colors.success,
-  delete: Colors.error,
-  update: Colors.info,
-  login: Colors.accent,
-  rollback: Colors.warning,
-  success: Colors.success,
-  failed: Colors.error,
-  running: Colors.primary,
-};
-
 export default function ActivityScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -116,11 +102,27 @@ export default function ActivityScreen() {
 
     const icon =
       actionIcon[actionKey] || actionIcon[shortAction] || "information-outline";
+
+    // Dynamic colors based on current theme
+    const actionColorMap: Record<string, string> = {
+      deploy: colors.primary,
+      stop: colors.error,
+      restart: colors.warning,
+      create: colors.success,
+      delete: colors.error,
+      update: colors.info,
+      login: colors.accent,
+      rollback: colors.warning,
+      success: colors.success,
+      failed: colors.error,
+      running: colors.primary,
+    };
+
     const color =
-      actionColor[item.status] ||
-      actionColor[actionKey] ||
-      actionColor[shortAction] ||
-      Colors.textSecondary;
+      actionColorMap[item.status] ||
+      actionColorMap[actionKey] ||
+      actionColorMap[shortAction] ||
+      colors.textSecondary;
     const time = new Date(item.createdAt || item.timestamp);
     const isToday = new Date().toDateString() === time.toDateString();
     const isLast = index === activities.length - 1;
@@ -183,11 +185,11 @@ export default function ActivityScreen() {
                 <Chip
                   compact
                   style={{
-                    backgroundColor: statusColor(item.status) + "20",
+                    backgroundColor: statusColor(item.status, colors) + "20",
                     height: 24,
                   }}
                   textStyle={{
-                    color: statusColor(item.status),
+                    color: statusColor(item.status, colors),
                     fontSize: 10,
                     fontWeight: "700",
                   }}

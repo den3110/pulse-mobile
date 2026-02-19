@@ -38,6 +38,7 @@ import { getFileIcon } from "../../utils/getFileIcon";
 
 import FileActionSheet from "../../components/FileActionSheet";
 import EditorModal from "../../components/EditorModal";
+import ImagePreviewModal from "../../components/ImagePreviewModal";
 import InputDialog from "../../components/InputDialog";
 import FolderPicker from "../../components/FolderPicker";
 import * as FileSystem from "expo-file-system/legacy";
@@ -94,6 +95,9 @@ export default function FTPScreen() {
   // Modals
   const [editorVisible, setEditorVisible] = useState(false);
   const [editorPath, setEditorPath] = useState("");
+
+  const [imagePreviewVisible, setImagePreviewVisible] = useState(false);
+  const [previewFile, setPreviewFile] = useState<FileEntry | null>(null);
 
   const [renameVisible, setRenameVisible] = useState(false);
   const [mkdirVisible, setMkdirVisible] = useState(false);
@@ -304,14 +308,6 @@ export default function FTPScreen() {
       newSet.add(name);
     }
     setSelectedItems(newSet);
-  };
-
-  const handleEdit = () => {
-    if (!selectedFile) return;
-    setEditorPath(
-      (currentPath === "/" ? "" : currentPath) + "/" + selectedFile.name,
-    );
-    setEditorVisible(true);
   };
 
   const handleRename = async (newName: string) => {
@@ -600,8 +596,26 @@ export default function FTPScreen() {
 
   const handlePreview = (item: FileEntry) => {
     if (isDirectory(item)) return;
-    // Re-use editor logic
-    setEditorPath((currentPath === "/" ? "" : currentPath) + "/" + item.name);
+
+    const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+    const isImage = imageExtensions.some((ext) =>
+      item.name.toLowerCase().endsWith(ext),
+    );
+
+    if (isImage) {
+      setPreviewFile(item);
+      setImagePreviewVisible(true);
+    } else {
+      // Fallback to editor for text files
+      handleEdit(item);
+    }
+  };
+
+  const handleEdit = (item?: FileEntry) => {
+    const target = item || selectedFile;
+    if (!target) return;
+
+    setEditorPath((currentPath === "/" ? "" : currentPath) + "/" + target.name);
     setEditorVisible(true);
   };
 
@@ -617,23 +631,17 @@ export default function FTPScreen() {
           // Using loop for now if backend doesn't support batch
           // EDIT: Backend SftpService.ts has deleteItems method but API might not expose it yet.
           // Checking API implementation... assuming standard loop for safety or single batch endpoint if I added it.
-          // The plan mentioned adding batch delete. I'll implement a loop here for safety as I can't check API route right now.
-          // Actually, I can use the same endpoint if I modified it, but let's assume I need to loop or use a new endpoint.
-          // I'll use a loop of delete calls for now to be safe, or check provided sftpService. It has deleteItems but needs route.
-          // Safe bet: Loop.
-          const paths = Array.from(selectedItems).map((name) => ({
-            path: (currentPath === "/" ? "" : currentPath) + "/" + name,
-            type: processedFiles.find((f) => f.name === name)?.type || "file",
-          }));
+          // Use a loop for now to be safe
+          for (const name of Array.from(selectedItems)) {
+            const item = processedFiles.find((f) => f.name === name);
+            if (!item) continue;
 
-          for (const item of paths) {
+            const path = (currentPath === "/" ? "" : currentPath) + "/" + name;
+            // Send as query params for better compatibility with some backends/proxies for DELETE
             await api.delete(`/ftp/${selectedServer._id}/file`, {
-              data: {
-                path: item.path,
-                type:
-                  item.type === "directory" || item.type === "d"
-                    ? "directory"
-                    : "file",
+              params: {
+                path,
+                type: isDirectory(item) ? "directory" : "file",
               },
             });
           }
@@ -755,6 +763,18 @@ export default function FTPScreen() {
     );
   }
 
+  const handleOpenTerminal = (item?: FileEntry) => {
+    if (!selectedServer) return;
+    const path = item
+      ? (currentPath === "/" ? "" : currentPath) + "/" + item.name
+      : currentPath;
+
+    router.push({
+      pathname: `/server/${selectedServer._id}/terminal`,
+      params: { path, id: selectedServer._id },
+    });
+  };
+
   return (
     <>
       <Stack.Screen
@@ -787,6 +807,10 @@ export default function FTPScreen() {
               </View>
             ) : (
               <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <IconButton
+                  icon="console"
+                  onPress={() => handleOpenTerminal()}
+                />
                 <Menu
                   visible={addMenuVisible}
                   onDismiss={() => setAddMenuVisible(false)}
@@ -919,6 +943,8 @@ export default function FTPScreen() {
           onUnzip={(file) => handleUnzip(file)}
           onProperties={(file) => handleProperties(file)}
           onPreview={(file) => handlePreview(file)}
+          onEdit={(file) => handleEdit(file)}
+          onTerminal={(file) => handleOpenTerminal(file)}
           onCopyPath={() => {
             /* Clipboard */ dialogRef.current?.show(
               "Copied",
@@ -942,6 +968,18 @@ export default function FTPScreen() {
               );
             }
           }}
+        />
+
+        <ImagePreviewModal
+          visible={imagePreviewVisible}
+          onDismiss={() => setImagePreviewVisible(false)}
+          serverId={selectedServer._id}
+          filePath={
+            (currentPath === "/" ? "" : currentPath) +
+            "/" +
+            (previewFile?.name || "")
+          }
+          fileName={previewFile?.name || ""}
         />
 
         <EditorModal

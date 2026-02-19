@@ -43,7 +43,23 @@ export default function SettingsScreen() {
     disableBiometric,
   } = useAuth();
   const router = useRouter();
-  const { isDark, colors, inputTheme, toggleTheme: ctxToggle } = useAppTheme();
+  const {
+    isDark,
+    colors,
+    inputTheme,
+    toggleTheme: ctxToggle,
+    primaryColor,
+    setPrimaryColor,
+  } = useAppTheme();
+
+  const PRESET_COLORS = [
+    "#6366f1", // Indigo (Default)
+    "#10b981", // Emerald
+    "#f43f5e", // Rose
+    "#f59e0b", // Amber
+    "#3b82f6", // Blue
+    "#8b5cf6", // Violet
+  ];
 
   // Biometric setup dialog
   const [showBioDialog, setShowBioDialog] = useState(false);
@@ -380,6 +396,51 @@ export default function SettingsScreen() {
               />
             </View>
             <Text style={styles.settingDesc}>{t("settings.themeDesc")}</Text>
+
+            <Divider style={{ marginVertical: 12 }} />
+
+            <View style={styles.sectionTitleRow}>
+              <SectionIcon name="palette" />
+              <Text style={styles.sectionTitle}>
+                {t("settings.primaryColor") || "Primary Color"}
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 12,
+                marginTop: 8,
+              }}
+            >
+              {PRESET_COLORS.map((color) => (
+                <Pressable
+                  key={color}
+                  onPress={() => {
+                    setPrimaryColor(color);
+                    Haptics.selectionAsync();
+                  }}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: color,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    borderWidth: primaryColor === color ? 2 : 0,
+                    borderColor: colors.text,
+                  }}
+                >
+                  {primaryColor === color && (
+                    <MaterialCommunityIcons
+                      name="check"
+                      size={20}
+                      color="#fff"
+                    />
+                  )}
+                </Pressable>
+              ))}
+            </View>
           </Card.Content>
         </Card>
 

@@ -714,10 +714,10 @@ export default function DashboardScreen() {
                 <Chip
                   compact
                   style={{
-                    backgroundColor: statusColor(dep.status) + "20",
+                    backgroundColor: statusColor(dep.status, colors) + "20",
                   }}
                   textStyle={{
-                    color: statusColor(dep.status),
+                    color: statusColor(dep.status, colors),
                     fontSize: 11,
                     fontWeight: "700",
                   }}

@@ -17,6 +17,7 @@
     "noData": "Không có dữ liệu",
     "confirm": "Xác nhận",
     "refresh": "Làm mới",
+    "kill": "Buộc dừng",
     "close": "Đóng",
     "back": "Quay lại",
     "deploy": "Triển khai",
@@ -51,7 +52,9 @@
     "installing": "Đang cài đặt",
     "starting": "Đang khởi chạy",
     "pending": "Chờ xử lý",
-    "tapToCopy": "Chạm để sao chép"
+    "tapToCopy": "Chạm để sao chép",
+    "more": "Khác",
+    "exportCSV": "Xuất CSV"
   },
   "auth": {
     "login": "Đăng nhập",
@@ -137,6 +140,17 @@
     "loadAvg": "Tải trung bình",
     "deleteWarning": "Hành động này không thể hoàn tác. Tất cả dữ liệu liên quan sẽ bị xóa vĩnh viễn.",
     "selectToBrowse": "Chọn máy chủ để duyệt file..."
+  },
+  "ports": {
+    "title": "Cổng mạng",
+    "killConfirmTitle": "Buộc dừng tiến trình",
+    "killConfirmMsg": "Bạn có chắc chắn muốn buộc dừng tiến trình này?",
+    "killFailed": "Buộc dừng tiến trình thất bại",
+    "protocol": "Giao thức",
+    "topUsers": "Người dùng hàng đầu",
+    "total": "Tổng",
+    "tcp": "TCP",
+    "udp": "UDP"
   },
   "projects": {
     "title": "Dự án",
@@ -339,18 +353,20 @@
     "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
     "passwordReset": "Mật khẩu đã được đặt lại"
   },
+
   "settings": {
     "title": "Cài đặt",
     "profile": "Hồ sơ",
     "changePassword": "Đổi mật khẩu",
     "currentPassword": "Mật khẩu hiện tại",
     "newPassword": "Mật khẩu mới",
-    "confirmPassword": "Xác nhận mật khẩu",
+    "confirmNewPassword": "Xác nhận mật khẩu mới",
     "updatePassword": "Cập nhật mật khẩu",
     "passwordChanged": "Đổi mật khẩu thành công",
     "language": "Ngôn ngữ",
     "theme": "Giao diện",
     "themeDesc": "Chọn giao diện bạn thích",
+    "primaryColor": "Màu chủ đạo",
     "about": "Giới thiệu",
     "version": "Phiên bản",
     "notifications": "Thông báo",

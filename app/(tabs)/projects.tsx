@@ -224,10 +224,10 @@ export default function ProjectsScreen() {
         <Chip
           style={[
             styles.statusChip,
-            { backgroundColor: statusColor(item.status) + "20" },
+            { backgroundColor: statusColor(item.status, colors) + "20" },
           ]}
           textStyle={{
-            color: statusColor(item.status),
+            color: statusColor(item.status, colors),
             fontSize: 11,
             lineHeight: 16,
             fontWeight: "700",
@@ -470,7 +470,7 @@ export default function ProjectsScreen() {
                   width: 8,
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: statusColor(f),
+                  backgroundColor: statusColor(f, colors),
                 }}
               />
             )}

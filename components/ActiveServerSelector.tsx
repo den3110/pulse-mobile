@@ -88,7 +88,7 @@ export default function ActiveServerSelector() {
                           width: 8,
                           height: 8,
                           borderRadius: 4,
-                          backgroundColor: statusColor(server.status),
+                          backgroundColor: statusColor(server.status, colors),
                         }}
                       />
                       <View style={{ flex: 1 }}>

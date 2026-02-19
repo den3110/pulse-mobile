@@ -17,6 +17,7 @@
     "noData": "No data",
     "confirm": "Confirm",
     "refresh": "Refresh",
+    "kill": "Kill",
     "close": "Close",
     "back": "Back",
     "deploy": "Deploy",
@@ -51,7 +52,8 @@
     "pending": "Pending",
     "created": "Created",
     "done": "Done",
-    "tapToCopy": "Tap to copy"
+    "tapToCopy": "Tap to copy",
+    "exportCSV": "Export CSV"
   },
   "auth": {
     "login": "Login",
@@ -137,6 +139,17 @@
     "saveFailed": "Failed to save server",
     "load": "Load: {{val}}",
     "projectsWithCount": "Projects ({{count}})"
+  },
+  "ports": {
+    "title": "Network Ports",
+    "killConfirmTitle": "Kill Process",
+    "killConfirmMsg": "Are you sure you want to kill this process?",
+    "killFailed": "Failed to kill process",
+    "protocol": "Protocol",
+    "topUsers": "Top Users",
+    "total": "Total",
+    "tcp": "TCP",
+    "udp": "UDP"
   },
   "projects": {
     "title": "Projects",

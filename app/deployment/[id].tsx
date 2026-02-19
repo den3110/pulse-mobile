@@ -654,9 +654,11 @@ export default function DeploymentDetailScreen() {
               </View>
               <Chip
                 compact
-                style={{ backgroundColor: statusColor(currentStatus) + "20" }}
+                style={{
+                  backgroundColor: statusColor(currentStatus, colors) + "20",
+                }}
                 textStyle={{
-                  color: statusColor(currentStatus),
+                  color: statusColor(currentStatus, colors),
                   fontWeight: "700",
                   fontSize: 13,
                 }}
@@ -1332,7 +1334,7 @@ export default function DeploymentDetailScreen() {
                   <Chip
                     compact
                     textStyle={{
-                      color: statusColor(dep.status),
+                      color: statusColor(dep.status, colors),
                       fontSize: 10,
                       fontWeight: "700",
                     }}
