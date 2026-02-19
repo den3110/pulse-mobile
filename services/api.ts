@@ -8,11 +8,10 @@ export const setForceLogoutHandler = (handler: AuthListener) => {
   onForceLogout = handler;
 };
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.100:5000/api";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.100:5000";
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: `${BASE_URL}/api`,
   headers: { "Content-Type": "application/json" },
   timeout: 30000,
 });
