@@ -34,15 +34,17 @@ import FileActionSheet from "../../../components/FileActionSheet";
 import EditorModal from "../../../components/EditorModal";
 import InputDialog from "../../../components/InputDialog";
 
-interface FileEntry {
-  name: string;
-  type: "d" | "-" | "l";
-  size: number; // in bytes
-  permissions: string;
-  owner: string;
-  group: string;
-  modified: string;
-}
+import { FileEntry } from "../../../constants/types";
+
+// interface FileEntry {
+//   name: string;
+//   type: "d" | "-" | "l";
+//   size: number; // in bytes
+//   permissions: string;
+//   owner: string;
+//   group: string;
+//   modified: string;
+// }
 
 export default function FTPScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); // serverId

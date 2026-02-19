@@ -4,15 +4,17 @@ import { Modal, Portal, Text, List, Button, Divider } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "../contexts/ThemeContext";
 
-interface FileEntry {
-  name: string;
-  type: "directory" | "file" | "symlink" | "d" | "-" | "l";
-  size: number;
-  permissions: string;
-  owner: string;
-  group: string;
-  modified: string;
-}
+import { FileEntry } from "../constants/types";
+
+// interface FileEntry {
+//   name: string;
+//   type: "directory" | "file" | "symlink" | "d" | "-" | "l";
+//   size: number;
+//   permissions: string;
+//   owner: string;
+//   group: string;
+//   modified: string;
+// }
 
 interface FileActionSheetProps {
   visible: boolean;

@@ -457,61 +457,102 @@ export default function NginxManagerScreen() {
           onRequestClose={() => setEditorVisible(false)}
         >
           <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <Appbar.Header>
+            <Appbar.Header statusBarHeight={0}>
               <Appbar.Action
                 icon="close"
                 onPress={() => setEditorVisible(false)}
               />
               <Appbar.Content
                 title={isNewFile ? t("nginx.newConfig") : editorFilename}
-              />
-              <Appbar.Action
-                icon="content-save"
-                onPress={() => handleSave(false)}
-                disabled={editorSaving}
-              />
-              <Appbar.Action
-                icon="reload"
-                onPress={() => handleSave(true)}
-                disabled={editorSaving}
+                subtitle={isNewFile ? "New File" : "Editing..."}
               />
             </Appbar.Header>
-            {editorLoading ? (
-              <View style={styles.centered}>
-                <ActivityIndicator size="large" />
-              </View>
-            ) : (
-              <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={{ flex: 1 }}
-              >
-                <ScrollView
-                  contentContainerStyle={{ flexGrow: 1, padding: 16 }}
-                >
-                  {isNewFile && (
-                    <TextInput
-                      label={
-                        t("nginx.filenamePlaceholder") ||
-                        "Filename (e.g. my-app)"
-                      }
-                      value={editorFilename}
-                      onChangeText={setEditorFilename}
-                      style={{ marginBottom: 16 }}
-                      mode="outlined"
+
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              style={{ flex: 1 }}
+              keyboardVerticalOffset={Platform.OS === "ios" ? 44 : 0}
+            >
+              {editorLoading ? (
+                <View style={styles.centered}>
+                  <ActivityIndicator size="large" />
+                </View>
+              ) : (
+                <View style={{ flex: 1 }}>
+                  <ScrollView
+                    contentContainerStyle={{ flexGrow: 1, padding: 16 }}
+                  >
+                    {isNewFile && (
+                      <TextInput
+                        label={
+                          t("nginx.filenamePlaceholder") ||
+                          "Filename (e.g. my-app)"
+                        }
+                        value={editorFilename}
+                        onChangeText={setEditorFilename}
+                        style={{ marginBottom: 16 }}
+                        mode="outlined"
+                      />
+                    )}
+                    <RNTextInput
+                      style={[
+                        styles.editorInput,
+                        { color: colors.text, textAlignVertical: "top" },
+                      ]}
+                      multiline
+                      value={editorContent}
+                      onChangeText={setEditorContent}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholder="// Nginx Config"
+                      placeholderTextColor={colors.textSecondary}
                     />
-                  )}
-                  <RNTextInput
-                    style={[styles.editorInput, { color: colors.text }]}
-                    multiline
-                    value={editorContent}
-                    onChangeText={setEditorContent}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    textAlignVertical="top"
-                  />
-                </ScrollView>
-              </KeyboardAvoidingView>
-            )}
+                  </ScrollView>
+
+                  {/* Bottom Action Bar */}
+                  <Divider />
+                  <View
+                    style={{
+                      padding: 12,
+                      flexDirection: "row",
+                      gap: 8,
+                      backgroundColor: colors.surface,
+                    }}
+                  >
+                    <Button
+                      mode="outlined"
+                      onPress={() => setEditorVisible(false)}
+                      style={{ flex: 1 }}
+                      compact
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      mode="contained"
+                      onPress={() => handleSave(false)}
+                      loading={editorSaving}
+                      disabled={editorSaving}
+                      style={{ flex: 1 }}
+                      compact
+                    >
+                      {t("common.save")}
+                    </Button>
+                    <Button
+                      mode="contained"
+                      onPress={() => handleSave(true)}
+                      loading={editorSaving}
+                      disabled={editorSaving}
+                      buttonColor={colors.accent}
+                      textColor="#ffffff"
+                      style={{ flex: 1.2 }}
+                      compact
+                    >
+                      Save & Reload
+                    </Button>
+                  </View>
+                </View>
+              )}
+            </KeyboardAvoidingView>
           </View>
         </Modal>
 
