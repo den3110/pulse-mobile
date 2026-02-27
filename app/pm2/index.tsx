@@ -9,6 +9,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   SafeAreaView,
+  Alert,
 } from "react-native";
 import CustomAlertDialog, {
   CustomAlertDialogRef,
@@ -182,26 +183,46 @@ export default function PM2ManagerScreen() {
     action: "stop" | "restart" | "reload" | "delete",
   ) => {
     if (!serverId) return;
-    setActionLoading(`${name}-${action}`);
-    setMenuVisible(null);
-    try {
-      const { data } = await api.post(`/pm2/${serverId}/${name}/${action}`);
-      if (data.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        fetchProcesses();
-      } else {
+
+    const performAction = async () => {
+      setActionLoading(`${name}-${action}`);
+      setMenuVisible(null);
+      try {
+        const { data } = await api.post(`/pm2/${serverId}/${name}/${action}`);
+        if (data.success) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          fetchProcesses();
+        } else {
+          dialogRef.current?.show(
+            t("common.error"),
+            data.output || t("pm2.actionFailed"),
+          );
+        }
+      } catch (err: any) {
         dialogRef.current?.show(
           t("common.error"),
-          data.output || t("pm2.actionFailed"),
+          err.response?.data?.message || t("pm2.actionFailed"),
         );
+      } finally {
+        setActionLoading(null);
       }
-    } catch (err: any) {
-      dialogRef.current?.show(
-        "Error",
-        err.response?.data?.message || "Action failed",
+    };
+
+    if (action === "delete") {
+      Alert.alert(
+        t("common.confirmDelete", "Confirm Delete"),
+        t("pm2.confirmDelete", "Are you sure you want to delete this process?"),
+        [
+          { text: t("common.cancel", "Cancel"), style: "cancel" },
+          {
+            text: t("common.delete", "Delete"),
+            style: "destructive",
+            onPress: performAction,
+          },
+        ],
       );
-    } finally {
-      setActionLoading(null);
+    } else {
+      performAction();
     }
   };
 

@@ -15,6 +15,7 @@ interface User {
   username: string;
   email: string;
   role: string;
+  githubUsername?: string;
   activeServer?: string;
 }
 

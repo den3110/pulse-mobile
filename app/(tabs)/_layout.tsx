@@ -2,7 +2,7 @@ import { Tabs, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "../../contexts/ThemeContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Platform, View, Pressable } from "react-native";
+import { Platform, View, Pressable, ScrollView } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useState } from "react";
 import {
@@ -17,12 +17,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ActiveServerSelector from "../../components/ActiveServerSelector";
 import { useNotifications } from "../../contexts/NotificationContext"; // Import
 import NotificationIcon from "../../components/NotificationIcon";
+import CommandPalette from "../../components/CommandPalette";
+import { IconButton } from "react-native-paper";
 
 export default function TabLayout() {
   const { t } = useTranslation();
   const { colors } = useAppTheme();
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [paletteVisible, setPaletteVisible] = useState(false);
   const insets = useSafeAreaInsets();
   const { unreadCount } = useNotifications(); // Use hook
 
@@ -47,25 +50,91 @@ export default function TabLayout() {
       color: colors.info,
     },
     {
-      title: "Database Manager",
+      title: t("nav.database", "Database Manager"),
       icon: "database",
       route: "/database",
       color: colors.warning,
     },
     {
-      title: "Nginx Manager",
+      title: t("nav.nginx", "Nginx Manager"),
       icon: "server-network",
       route: "/nginx",
       color: colors.primary,
     },
     {
-      title: "Port Manager",
+      title: t("nav.ports", "Port Manager"),
       icon: "lan",
       route: "/ports",
       color: colors.info,
     },
     {
-      title: t("nav.settings"),
+      title: t("nav.docker", "Docker"),
+      icon: "docker",
+      route: "/docker",
+      color: colors.primary,
+    },
+    {
+      title: t("nav.infrastructure", "Infrastructure"),
+      icon: "sitemap",
+      route: "/infrastructure",
+      color: colors.accent,
+    },
+    {
+      title: t("nav.analytics", "Analytics"),
+      icon: "chart-bar",
+      route: "/analytics",
+      color: colors.info,
+    },
+    {
+      title: t("nav.bandwidth", "Bandwidth"),
+      icon: "speedometer",
+      route: "/bandwidth",
+      color: colors.success,
+    },
+    {
+      title: t("nav.logs", "Log Studio"),
+      icon: "text-box-search",
+      route: "/logs",
+      color: colors.primary,
+    },
+    {
+      title: t("nav.approvals", "Approvals"),
+      icon: "shield-check-outline",
+      route: "/approvals",
+      color: colors.warning,
+    },
+    {
+      title: t("nav.secrets", "Secrets"),
+      icon: "key-outline",
+      route: "/secrets",
+      color: colors.primary,
+    },
+    {
+      title: t("nav.webhookDebug", "Webhooks"),
+      icon: "webhook",
+      route: "/webhook-debug",
+      color: colors.accent,
+    },
+    {
+      title: t("nav.testRunner", "Test Runner"),
+      icon: "test-tube",
+      route: "/test-runner",
+      color: colors.info,
+    },
+    {
+      title: t("nav.pipelines", "Pipelines"),
+      icon: "pipe",
+      route: "/pipelines",
+      color: colors.primary,
+    },
+    {
+      title: t("nav.vpn", "VPN Server"),
+      icon: "shield-lock-outline",
+      route: "/vpn",
+      color: colors.warning,
+    },
+    {
+      title: t("nav.settings", "Settings"),
       icon: "cog",
       route: "/(tabs)/settings",
       color: colors.text,
@@ -85,6 +154,10 @@ export default function TabLayout() {
 
   return (
     <>
+      <CommandPalette
+        visible={paletteVisible}
+        onDismiss={() => setPaletteVisible(false)}
+      />
       <Tabs
         screenOptions={{
           headerStyle: {
@@ -120,7 +193,17 @@ export default function TabLayout() {
           options={{
             title: t("nav.dashboard"),
             headerTitle: () => <ActiveServerSelector />,
-            headerRight: () => <NotificationIcon />,
+            headerRight: () => (
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <IconButton
+                  icon="magnify"
+                  iconColor={colors.text}
+                  onPress={() => setPaletteVisible(true)}
+                  style={{ marginRight: -5 }}
+                />
+                <NotificationIcon />
+              </View>
+            ),
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons
                 name="view-dashboard"
@@ -134,6 +217,13 @@ export default function TabLayout() {
           name="servers"
           options={{
             title: t("nav.servers"),
+            headerRight: () => (
+              <IconButton
+                icon="magnify"
+                iconColor={colors.text}
+                onPress={() => setPaletteVisible(true)}
+              />
+            ),
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="server" size={24} color={color} />
             ),
@@ -143,6 +233,13 @@ export default function TabLayout() {
           name="projects"
           options={{
             title: t("nav.projects"),
+            headerRight: () => (
+              <IconButton
+                icon="magnify"
+                iconColor={colors.text}
+                onPress={() => setPaletteVisible(true)}
+              />
+            ),
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="folder" size={24} color={color} />
             ),
@@ -152,6 +249,13 @@ export default function TabLayout() {
           name="activity"
           options={{
             title: t("nav.activity"),
+            headerRight: () => (
+              <IconButton
+                icon="magnify"
+                iconColor={colors.text}
+                onPress={() => setPaletteVisible(true)}
+              />
+            ),
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="history" size={24} color={color} />
             ),
@@ -167,7 +271,7 @@ export default function TabLayout() {
           }}
         />
 
-        {/* Hidden Settings Tab (still accessible via router but hidden from tab bar) */}
+        {/* Hidden Pages to register routes without showing in tab bar */}
         <Tabs.Screen
           name="settings"
           options={{
@@ -199,65 +303,70 @@ export default function TabLayout() {
         />
       </Tabs>
 
-      {/* Menu Modal */}
+      {/* Menu Modal (Bottom Sheet Style) */}
       <Portal>
         <Modal
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
           contentContainerStyle={{
             backgroundColor: colors.surface,
-            margin: 20,
-            borderRadius: 14,
-            paddingVertical: 10,
-            paddingBottom: 20,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingTop: 12,
+            paddingBottom: insets.bottom + 20,
             position: "absolute",
-            bottom: 60 + insets.bottom + 20, // Position above tab bar
+            bottom: 0,
             left: 0,
             right: 0,
-            borderWidth: 1,
-            borderColor: colors.border,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
+            maxHeight: "85%", // Constrain height so it scrolls if too long
           }}
         >
-          <View style={{ alignItems: "center", paddingVertical: 10 }}>
+          <View style={{ alignItems: "center", paddingBottom: 16 }}>
             <View
               style={{
                 width: 40,
-                height: 4,
+                height: 5,
                 backgroundColor: colors.border,
-                borderRadius: 2,
+                borderRadius: 3,
               }}
             />
           </View>
           <Text
             style={{
               textAlign: "center",
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: "700",
               color: colors.text,
-              marginBottom: 10,
+              marginBottom: 12,
             }}
           >
-            Quick Actions
+            {t("common.more", "Menu")}
           </Text>
-          <Divider style={{ marginBottom: 5 }} />
+          <Divider style={{ marginBottom: 8 }} />
 
-          {menuItems.map((item, index) => (
-            <List.Item
-              key={index}
-              title={item.title}
-              left={(props) => (
-                <List.Icon {...props} icon={item.icon} color={item.color} />
-              )}
-              onPress={() => handleMenuPress(item.route)}
-              style={{ paddingVertical: 4 }}
-              titleStyle={{ fontSize: 15, fontWeight: "600" }}
-            />
-          ))}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 10 }}
+            bounces={false}
+          >
+            {menuItems.map((item, index) => (
+              <List.Item
+                key={index}
+                title={item.title}
+                left={(props) => (
+                  <List.Icon {...props} icon={item.icon} color={item.color} />
+                )}
+                onPress={() => handleMenuPress(item.route)}
+                style={{
+                  paddingVertical: 4,
+                  paddingHorizontal: 8,
+                  borderRadius: 12,
+                }}
+                titleStyle={{ fontSize: 15, fontWeight: "600" }}
+                rippleColor="rgba(0, 0, 0, 0.05)"
+              />
+            ))}
+          </ScrollView>
         </Modal>
       </Portal>
     </>

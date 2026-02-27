@@ -7,19 +7,20 @@ import {
   Platform,
   Pressable,
   KeyboardAvoidingView,
+  Image,
 } from "react-native";
 import {
   Text,
-  Card,
   Button,
-  TextInput,
+  Card,
   Switch,
-  ActivityIndicator,
+  TextInput,
   Divider,
-  List,
   Dialog,
   Portal,
+  ActivityIndicator,
   Checkbox,
+  List,
 } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -61,6 +62,21 @@ export default function SettingsScreen() {
     "#8b5cf6", // Violet
   ];
 
+  // 2FA state
+  const [show2FADialog, setShow2FADialog] = useState(false);
+  const [showDisable2FADialog, setShowDisable2FADialog] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorSecret, setTwoFactorSecret] = useState("");
+  const [twoFactorQrCode, setTwoFactorQrCode] = useState("");
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
+  const [disable2FAPassword, setDisable2FAPassword] = useState("");
+
+  // GitHub state
+  const [confirmGithubDisconnect, setConfirmGithubDisconnect] = useState(false);
+
+  // S3 state
+  const [s3DialogOpen, setS3DialogOpen] = useState(false);
+
   // Biometric setup dialog
   const [showBioDialog, setShowBioDialog] = useState(false);
   const [bioEmail, setBioEmail] = useState("");
@@ -76,9 +92,22 @@ export default function SettingsScreen() {
   const [systemInfo, setSystemInfo] = useState<any>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
 
+  // Account deletion
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // Danger zone clear history
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearDays, setClearDays] = useState(30);
+
   const [emailOnDeploy, setEmailOnDeploy] = useState(false);
   const [emailOnFailure, setEmailOnFailure] = useState(true);
   const [emailOnSuccess, setEmailOnSuccess] = useState(false);
+
+  const [pushOnDeploy, setPushOnDeploy] = useState(false);
+  const [pushOnFailure, setPushOnFailure] = useState(true);
+  const [pushOnSuccess, setPushOnSuccess] = useState(false);
 
   const [notifConfig, setNotifConfig] = useState({
     discord: { enabled: false, webhookUrl: "" },
@@ -105,9 +134,42 @@ export default function SettingsScreen() {
         ]);
         if (settingsRes.data) {
           setSettings(settingsRes.data);
-          setEmailOnDeploy(settingsRes.data.emailOnDeploy ?? false);
-          setEmailOnFailure(settingsRes.data.emailOnFailure ?? true);
-          setEmailOnSuccess(settingsRes.data.emailOnSuccess ?? false);
+          setEmailOnDeploy(
+            settingsRes.data.emailOnDeploy !== undefined
+              ? settingsRes.data.emailOnDeploy === "true" ||
+                  settingsRes.data.emailOnDeploy === true
+              : false,
+          );
+          setEmailOnFailure(
+            settingsRes.data.emailOnFailure !== undefined
+              ? settingsRes.data.emailOnFailure === "true" ||
+                  settingsRes.data.emailOnFailure === true
+              : true,
+          );
+          setEmailOnSuccess(
+            settingsRes.data.emailOnSuccess !== undefined
+              ? settingsRes.data.emailOnSuccess === "true" ||
+                  settingsRes.data.emailOnSuccess === true
+              : false,
+          );
+          setPushOnDeploy(
+            settingsRes.data.pushOnDeploy !== undefined
+              ? settingsRes.data.pushOnDeploy === "true" ||
+                  settingsRes.data.pushOnDeploy === true
+              : false,
+          );
+          setPushOnFailure(
+            settingsRes.data.pushOnFailure !== undefined
+              ? settingsRes.data.pushOnFailure === "true" ||
+                  settingsRes.data.pushOnFailure === true
+              : true,
+          );
+          setPushOnSuccess(
+            settingsRes.data.pushOnSuccess !== undefined
+              ? settingsRes.data.pushOnSuccess === "true" ||
+                  settingsRes.data.pushOnSuccess === true
+              : false,
+          );
         }
         if (sysRes.data) setSystemInfo(sysRes.data);
         if (notifRes.data) setNotifConfig(notifRes.data);
@@ -157,6 +219,9 @@ export default function SettingsScreen() {
         emailOnDeploy,
         emailOnFailure,
         emailOnSuccess,
+        pushOnDeploy,
+        pushOnFailure,
+        pushOnSuccess,
         ...settings, // Save other settings like pollingInterval, defaults
       });
       await api.put("/settings/notifications", notifConfig);
@@ -246,28 +311,50 @@ export default function SettingsScreen() {
   };
 
   const clearHistory = () => {
-    Alert.alert(t("settings.clearHistory"), t("settings.clearHistoryConfirm"), [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("common.delete"),
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete("/settings/clear-history");
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert(
-              t("common.success") || "Success",
-              t("settings.historyCleared"),
-            );
-          } catch (err: any) {
-            Alert.alert(
-              t("common.error"),
-              err.response?.data?.message || t("common.failed"),
-            );
-          }
-        },
-      },
-    ]);
+    setConfirmClear(true);
+  };
+
+  const handleClearHistory = async () => {
+    try {
+      await api.delete(`/settings/clear-history?days=${clearDays}`);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        t("common.success") || "Success",
+        t("settings.historyCleared"),
+      );
+      setConfirmClear(false);
+    } catch (err: any) {
+      Alert.alert(
+        t("common.error"),
+        err.response?.data?.message || t("common.failed"),
+      );
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deleteAccountPassword) {
+      Alert.alert(
+        t("common.error"),
+        t("auth.passwordRequired", "Password is required"),
+      );
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      await api.delete("/auth/account", {
+        data: { password: deleteAccountPassword },
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setConfirmDeleteAccount(false);
+      logout();
+    } catch (err: any) {
+      Alert.alert(
+        t("common.error"),
+        err.response?.data?.message || t("common.failed"),
+      );
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   const handleLogout = () => {
@@ -279,6 +366,97 @@ export default function SettingsScreen() {
         onPress: () => logout(),
       },
     ]);
+  };
+
+  const start2FASetup = async () => {
+    try {
+      setTwoFactorLoading(true);
+      const res = await api.post("/auth/2fa/generate");
+      setTwoFactorSecret(res.data.secret);
+      setTwoFactorQrCode(res.data.qrCodeUrl);
+      setShow2FADialog(true);
+    } catch (err: any) {
+      Alert.alert(
+        t("common.error"),
+        err.response?.data?.message || t("common.failed"),
+      );
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  };
+
+  const submitVerifyAndEnable2FA = async () => {
+    if (twoFactorCode.length < 6) return;
+    try {
+      setTwoFactorLoading(true);
+      await api.post("/auth/2fa/verify", {
+        token: twoFactorCode,
+        secret: twoFactorSecret, // Initial verification needs the secret
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        t("common.success"),
+        t("settings.twoFactorEnabled", "2FA Enabled"),
+      );
+      setShow2FADialog(false);
+      setTwoFactorCode("");
+
+      // Update local settings state
+      setSettings({ ...settings, twoFactorEnabled: true });
+    } catch (err: any) {
+      Alert.alert(
+        t("common.error"),
+        err.response?.data?.message || t("common.failed"),
+      );
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  };
+
+  const submitDisable2FA = async () => {
+    if (!disable2FAPassword) return;
+    try {
+      setTwoFactorLoading(true);
+      await api.post("/auth/2fa/disable", {
+        password: disable2FAPassword,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        t("common.success"),
+        t("settings.twoFactorDisabled", "2FA Disabled"),
+      );
+      setShowDisable2FADialog(false);
+      setDisable2FAPassword("");
+
+      // Update local settings
+      setSettings({ ...settings, twoFactorEnabled: false });
+    } catch (err: any) {
+      Alert.alert(
+        t("common.error"),
+        err.response?.data?.message || t("common.failed"),
+      );
+    } finally {
+      setTwoFactorLoading(false);
+    }
+  };
+
+  const handleGithubDisconnect = async () => {
+    try {
+      await api.delete("/auth/github/disconnect");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setConfirmGithubDisconnect(false);
+      // Reload user or auth state if it stores Github connection
+
+      Alert.alert(
+        t("common.success"),
+        t("settings.githubDisconnected", "GitHub Disconnected"),
+      );
+    } catch (err: any) {
+      Alert.alert(
+        t("common.error"),
+        err.response?.data?.message || t("common.failed"),
+      );
+    }
   };
 
   const Colors = colors; // alias for less diff
@@ -502,6 +680,66 @@ export default function SettingsScreen() {
             </Card.Content>
           </Card>
         )}
+
+        {/* Two-Factor Authentication (2FA) */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.sectionTitleRow}>
+              <SectionIcon name="two-factor-authentication" />
+              <Text style={styles.sectionTitle}>
+                {t("settings.twoFactor", "Two-Factor Authentication")}
+              </Text>
+            </View>
+            <Text style={styles.settingDesc}>
+              {t(
+                "settings.twoFactorDesc",
+                "Protect your account with an extra layer of security using Google Authenticator or Authy.",
+              )}
+            </Text>
+
+            <View style={{ marginTop: 12 }}>
+              {settings?.twoFactorEnabled ? (
+                <View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="shield-check"
+                      size={18}
+                      color={Colors.success}
+                    />
+                    <Text style={{ color: Colors.success, fontWeight: "600" }}>
+                      {t("settings.twoFactorEnabled", "2FA is Enabled")}
+                    </Text>
+                  </View>
+                  <Button
+                    mode="outlined"
+                    textColor={Colors.error}
+                    onPress={() => setShowDisable2FADialog(true)}
+                    style={{ borderColor: Colors.error, borderRadius: 10 }}
+                  >
+                    {t("settings.disable2fa", "Disable 2FA")}
+                  </Button>
+                </View>
+              ) : (
+                <Button
+                  mode="contained"
+                  buttonColor={Colors.primary}
+                  onPress={start2FASetup}
+                  loading={twoFactorLoading}
+                  style={{ borderRadius: 10 }}
+                >
+                  {t("settings.setup2fa", "Setup 2FA")}
+                </Button>
+              )}
+            </View>
+          </Card.Content>
+        </Card>
 
         {/* Biometric Password Dialog */}
         <Portal>
@@ -795,11 +1033,121 @@ export default function SettingsScreen() {
                 style={styles.checkboxItem}
               />
             </View>
+          </Card.Content>
+        </Card>
 
-            <Divider style={{ marginVertical: 12 }} />
+        {/* Email Notifications */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.sectionTitleRow}>
+              <SectionIcon name="email-outline" />
+              <Text style={styles.sectionTitle}>
+                {t("settings.emailNotifications") || "Email Notifications"}
+              </Text>
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>
+                {t("settings.emailOnDeploy")}
+              </Text>
+              <Switch
+                value={emailOnDeploy}
+                onValueChange={setEmailOnDeploy}
+                color={Colors.primary}
+              />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>
+                {t("settings.emailOnFailure")}
+              </Text>
+              <Switch
+                value={emailOnFailure}
+                onValueChange={setEmailOnFailure}
+                color={Colors.primary}
+              />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>
+                {t("settings.emailOnSuccess")}
+              </Text>
+              <Switch
+                value={emailOnSuccess}
+                onValueChange={setEmailOnSuccess}
+                color={Colors.primary}
+              />
+            </View>
+            <Button
+              mode="contained"
+              onPress={saveNotifications}
+              compact
+              buttonColor={Colors.primary}
+              style={{ marginTop: 8, borderRadius: 10 }}
+            >
+              {t("common.save")}
+            </Button>
+          </Card.Content>
+        </Card>
 
-            <Text style={styles.subTitle}>{t("settings.gitPolling")}</Text>
-            <View style={styles.channelRow}>
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.sectionTitleRow}>
+              <SectionIcon name="cellphone-message" />
+              <Text style={styles.sectionTitle}>
+                {t("settings.pushNotifications") || "Push Notifications"}
+              </Text>
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>
+                {t("settings.pushOnDeploy")}
+              </Text>
+              <Switch
+                value={pushOnDeploy}
+                onValueChange={setPushOnDeploy}
+                color={Colors.primary}
+              />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>
+                {t("settings.pushOnFailure")}
+              </Text>
+              <Switch
+                value={pushOnFailure}
+                onValueChange={setPushOnFailure}
+                color={Colors.primary}
+              />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>
+                {t("settings.pushOnSuccess")}
+              </Text>
+              <Switch
+                value={pushOnSuccess}
+                onValueChange={setPushOnSuccess}
+                color={Colors.primary}
+              />
+            </View>
+            <Button
+              mode="contained"
+              onPress={saveNotifications}
+              compact
+              buttonColor={Colors.primary}
+              style={{ marginTop: 8, borderRadius: 10 }}
+            >
+              {t("common.save")}
+            </Button>
+          </Card.Content>
+        </Card>
+
+        {/* Git Polling */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.sectionTitleRow}>
+              <SectionIcon name="git" />
+              <Text style={styles.sectionTitle}>
+                {t("settings.gitPolling")}
+              </Text>
+            </View>
+            <Text style={styles.settingDesc}>{t("settings.pollingDesc")}</Text>
+            <View style={[styles.channelRow, { marginTop: 12 }]}>
               <Text style={styles.switchLabel}>
                 {t("settings.pollingInterval")}
               </Text>
@@ -818,11 +1166,68 @@ export default function SettingsScreen() {
                 right={<TextInput.Affix text="min" />}
               />
             </View>
+            <Button
+              mode="contained"
+              onPress={saveNotifications}
+              compact
+              buttonColor={Colors.primary}
+              style={{ marginTop: 8, borderRadius: 10 }}
+            >
+              {t("common.save")}
+            </Button>
+          </Card.Content>
+        </Card>
 
-            <Divider style={{ marginVertical: 12 }} />
+        {/* Webhook Information */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.sectionTitleRow}>
+              <SectionIcon name="webhook" />
+              <Text style={styles.sectionTitle}>
+                {t("settings.webhookIncoming") || "Incoming Webhook"}
+              </Text>
+            </View>
+            <Text style={styles.settingDesc}>
+              {t("settings.webhookDesc") ||
+                "Configure this URL in your Git provider to trigger deployments automatically."}
+            </Text>
 
-            <Text style={styles.subTitle}>
-              {t("settings.deploymentDefaults")}
+            <View
+              style={{
+                backgroundColor: isDark ? "#161b22" : "#f6f8fa",
+                padding: 12,
+                borderRadius: 8,
+                marginTop: 12,
+                borderWidth: 1,
+                borderColor: Colors.border,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+                  fontSize: 12,
+                  color: isDark ? "#c9d1d9" : "#24292e",
+                }}
+              >
+                POST {process.env.EXPO_PUBLIC_API_URL?.replace("/api", "")}
+                /api/webhook/{"<projectId>"}
+              </Text>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* Deployment Defaults */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.sectionTitleRow}>
+              <SectionIcon name="console" />
+              <Text style={styles.sectionTitle}>
+                {t("settings.deploymentDefaults")}
+              </Text>
+            </View>
+            <Text style={[styles.settingDesc, { marginBottom: 12 }]}>
+              {t("settings.deploymentDefaultsDesc") ||
+                "Default commands used when creating new projects."}
             </Text>
             <TextInput
               label={t("settings.defaultInstallCommand")}
@@ -863,39 +1268,6 @@ export default function SettingsScreen() {
               textColor={Colors.text}
               theme={inputTheme}
             />
-
-            <Divider style={{ marginVertical: 12 }} />
-
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>
-                {t("settings.emailOnDeploy")}
-              </Text>
-              <Switch
-                value={emailOnDeploy}
-                onValueChange={setEmailOnDeploy}
-                color={Colors.primary}
-              />
-            </View>
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>
-                {t("settings.emailOnFailure")}
-              </Text>
-              <Switch
-                value={emailOnFailure}
-                onValueChange={setEmailOnFailure}
-                color={Colors.primary}
-              />
-            </View>
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>
-                {t("settings.emailOnSuccess")}
-              </Text>
-              <Switch
-                value={emailOnSuccess}
-                onValueChange={setEmailOnSuccess}
-                color={Colors.primary}
-              />
-            </View>
             <Button
               mode="contained"
               onPress={saveNotifications}
@@ -963,6 +1335,143 @@ export default function SettingsScreen() {
             >
               {t("settings.changePassword")}
             </Button>
+          </Card.Content>
+        </Card>
+
+        {/* GitHub Integration */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.sectionTitleRow}>
+              <SectionIcon name="github" />
+              <Text style={styles.sectionTitle}>
+                {t("settings.connectedAccounts", "Connected Accounts")}
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 8,
+              }}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+              >
+                <MaterialCommunityIcons
+                  name="github"
+                  size={24}
+                  color={Colors.text}
+                />
+                <View>
+                  <Text
+                    style={{
+                      color: Colors.text,
+                      fontWeight: "600",
+                      fontSize: 16,
+                    }}
+                  >
+                    GitHub
+                  </Text>
+                  {user?.githubUsername ? (
+                    <Text style={{ color: Colors.success, fontSize: 13 }}>
+                      {t("settings.connected", "Connected")} (
+                      {user.githubUsername})
+                    </Text>
+                  ) : (
+                    <Text style={{ color: Colors.textSecondary, fontSize: 13 }}>
+                      {t("settings.notConnected", "Not connected")}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              {user?.githubUsername ? (
+                <Button
+                  mode="outlined"
+                  textColor={Colors.error}
+                  onPress={() => setConfirmGithubDisconnect(true)}
+                  style={{ borderColor: Colors.error, borderRadius: 8 }}
+                  compact
+                >
+                  {t("common.disconnect", "Disconnect")}
+                </Button>
+              ) : (
+                <Button
+                  mode="contained"
+                  buttonColor="#333"
+                  onPress={() => {
+                    /* Navigate or open OAuth url */
+                    Alert.alert(
+                      "Info",
+                      "Connecting GitHub from mobile requires a browser redirect.",
+                    );
+                  }}
+                  style={{ borderRadius: 8 }}
+                  compact
+                >
+                  {t("common.connect", "Connect")}
+                </Button>
+              )}
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* S3 Storage Settings */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <View style={styles.sectionTitleRow}>
+              <SectionIcon name="cloud-upload" />
+              <Text style={styles.sectionTitle}>
+                {t("settings.s3Backup", "Remote Backup Storage (S3)")}
+              </Text>
+            </View>
+            <Text style={styles.settingDesc}>
+              {t(
+                "settings.s3BackupDesc",
+                "Configure an S3-compatible service (AWS, Cloudflare R2, MinIO) to automatically upload database backups.",
+              )}
+            </Text>
+
+            <View style={[styles.switchRow, { marginTop: 12 }]}>
+              <Text style={[styles.switchLabel, { fontWeight: "600" }]}>
+                {t("settings.enableS3", "Enable S3 Automation")}
+              </Text>
+              <Switch
+                value={settings?.s3Storage?.enabled || false}
+                onValueChange={(checked) =>
+                  setSettings({
+                    ...settings,
+                    s3Storage: {
+                      ...(settings?.s3Storage || {
+                        accessKeyId: "",
+                        secretAccessKey: "",
+                        endpoint: "",
+                        region: "",
+                        bucketName: "",
+                      }),
+                      enabled: checked,
+                    },
+                  })
+                }
+                color={Colors.primary}
+              />
+            </View>
+
+            {settings?.s3Storage?.enabled && (
+              <Button
+                mode="outlined"
+                onPress={() => setS3DialogOpen(true)}
+                icon="cog"
+                textColor={Colors.primary}
+                style={{
+                  borderColor: Colors.primary,
+                  borderRadius: 10,
+                  marginTop: 8,
+                }}
+              >
+                {t("settings.configureS3Credentials", "Configure Credentials")}
+              </Button>
+            )}
           </Card.Content>
         </Card>
 
@@ -1035,6 +1544,15 @@ export default function SettingsScreen() {
             </Button>
             <Button
               mode="contained"
+              onPress={() => setConfirmDeleteAccount(true)}
+              icon="account-cancel"
+              buttonColor={Colors.error}
+              style={{ borderRadius: 10, marginBottom: 10 }}
+            >
+              {t("settings.deleteAccount", "Delete Account")}
+            </Button>
+            <Button
+              mode="contained"
               onPress={handleLogout}
               icon="logout"
               buttonColor={Colors.error}
@@ -1044,6 +1562,458 @@ export default function SettingsScreen() {
             </Button>
           </Card.Content>
         </Card>
+
+        {/* --- DIALOGS --- */}
+        <Portal>
+          {/* Biometric Password Dialog */}
+          <Dialog
+            visible={showBioDialog}
+            onDismiss={() => setShowBioDialog(false)}
+            style={{ backgroundColor: Colors.card, borderRadius: 20 }}
+          >
+            <Dialog.Title style={{ color: Colors.text }}>
+              {t("settings.setupBiometric")}
+            </Dialog.Title>
+            <Dialog.Content>
+              <Text style={{ color: Colors.textSecondary, marginBottom: 14 }}>
+                {t("settings.enterPasswordToEnable")}
+              </Text>
+              <TextInput
+                label={t("auth.emailOrUsername")}
+                value={bioEmail}
+                onChangeText={setBioEmail}
+                mode="outlined"
+                autoCapitalize="none"
+                style={styles.input}
+                outlineColor={Colors.border}
+                activeOutlineColor={Colors.primary}
+                textColor={Colors.text}
+                theme={inputTheme}
+              />
+              <TextInput
+                label={t("auth.password")}
+                value={bioPassword}
+                onChangeText={setBioPassword}
+                mode="outlined"
+                secureTextEntry
+                style={[styles.input, { marginTop: 8 }]}
+                outlineColor={Colors.border}
+                activeOutlineColor={Colors.primary}
+                textColor={Colors.text}
+                theme={inputTheme}
+              />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                onPress={() => setShowBioDialog(false)}
+                textColor={Colors.textSecondary}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onPress={confirmEnableBiometric}
+                loading={enablingBio}
+                textColor={Colors.primary}
+              >
+                {t("common.confirm")}
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+
+          {/* Setup 2FA Dialog */}
+          <Dialog
+            visible={show2FADialog}
+            onDismiss={() => setShow2FADialog(false)}
+            style={{ backgroundColor: Colors.card, borderRadius: 20 }}
+          >
+            <Dialog.Title style={{ color: Colors.text }}>
+              {t("auth.twoFactorAuth", "Setup 2FA")}
+            </Dialog.Title>
+            <Dialog.Content>
+              <ScrollView>
+                <Text style={{ color: Colors.textSecondary, marginBottom: 14 }}>
+                  {t(
+                    "auth.scanQrCode",
+                    "Scan this QR code with your authenticator app:",
+                  )}
+                </Text>
+                {twoFactorQrCode ? (
+                  <View style={{ alignItems: "center", marginVertical: 16 }}>
+                    <Image
+                      source={{ uri: twoFactorQrCode }}
+                      style={{
+                        width: 200,
+                        height: 200,
+                        marginBottom: 16,
+                        backgroundColor: "white",
+                        borderRadius: 10,
+                      }}
+                    />
+                    <Text
+                      style={{
+                        textAlign: "center",
+                        color: Colors.primary,
+                        fontFamily:
+                          Platform.OS === "ios" ? "Menlo" : "monospace",
+                        fontSize: 16,
+                        backgroundColor: Colors.surface,
+                        padding: 8,
+                        borderRadius: 8,
+                        marginBottom: 10,
+                        letterSpacing: 2,
+                      }}
+                    >
+                      {twoFactorSecret}
+                    </Text>
+                    <Text
+                      style={{
+                        color: Colors.textSecondary,
+                        fontSize: 12,
+                        textAlign: "center",
+                      }}
+                    >
+                      {t(
+                        "auth.enterCodeManual",
+                        "Or enter the secret code above manually into your app.",
+                      )}
+                    </Text>
+                  </View>
+                ) : (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                )}
+
+                <TextInput
+                  label={t("auth.twoFactorCode", "6-digit Code")}
+                  value={twoFactorCode}
+                  onChangeText={setTwoFactorCode}
+                  mode="outlined"
+                  keyboardType="numeric"
+                  maxLength={6}
+                  style={styles.input}
+                  outlineColor={Colors.border}
+                  activeOutlineColor={Colors.primary}
+                  textColor={Colors.text}
+                  theme={inputTheme}
+                />
+              </ScrollView>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                onPress={() => setShow2FADialog(false)}
+                textColor={Colors.textSecondary}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onPress={submitVerifyAndEnable2FA}
+                loading={twoFactorLoading}
+                disabled={twoFactorCode.length < 6 || twoFactorLoading}
+                textColor={Colors.primary}
+              >
+                {t("settings.verifyAndEnable", "Verify & Enable")}
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+
+          {/* Disable 2FA Dialog */}
+          <Dialog
+            visible={showDisable2FADialog}
+            onDismiss={() => {
+              setShowDisable2FADialog(false);
+              setDisable2FAPassword("");
+            }}
+            style={{ backgroundColor: Colors.card, borderRadius: 20 }}
+          >
+            <Dialog.Title style={{ color: Colors.text }}>
+              {t("settings.disable2fa", "Disable 2FA")}
+            </Dialog.Title>
+            <Dialog.Content>
+              <Text style={{ color: Colors.textSecondary, marginBottom: 14 }}>
+                {t(
+                  "settings.enterPasswordToDisable",
+                  "Enter your password to disable 2FA.",
+                )}
+              </Text>
+              <TextInput
+                label={t("auth.password")}
+                value={disable2FAPassword}
+                onChangeText={setDisable2FAPassword}
+                mode="outlined"
+                secureTextEntry
+                style={styles.input}
+                outlineColor={Colors.border}
+                activeOutlineColor={Colors.primary}
+                textColor={Colors.text}
+                theme={inputTheme}
+              />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                onPress={() => {
+                  setShowDisable2FADialog(false);
+                  setDisable2FAPassword("");
+                }}
+                textColor={Colors.textSecondary}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onPress={submitDisable2FA}
+                loading={twoFactorLoading}
+                disabled={!disable2FAPassword || twoFactorLoading}
+                textColor={Colors.error}
+              >
+                {t("settings.confirmDisable", "Disable")}
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+
+          {/* S3 Configuration Dialog */}
+          <Dialog
+            visible={s3DialogOpen}
+            onDismiss={() => setS3DialogOpen(false)}
+            style={{ backgroundColor: Colors.card, borderRadius: 20 }}
+          >
+            <Dialog.Title style={{ color: Colors.text }}>
+              {t("settings.s3Backup", "S3 Storage Settings")}
+            </Dialog.Title>
+            <Dialog.Content>
+              <ScrollView style={{ maxHeight: 300 }}>
+                <TextInput
+                  label="Access Key ID"
+                  value={settings?.s3Storage?.accessKeyId || ""}
+                  onChangeText={(v) =>
+                    setSettings({
+                      ...settings,
+                      s3Storage: { ...settings?.s3Storage, accessKeyId: v },
+                    })
+                  }
+                  mode="outlined"
+                  style={styles.input}
+                  theme={inputTheme}
+                  textColor={Colors.text}
+                />
+                <TextInput
+                  label="Secret Access Key"
+                  value={settings?.s3Storage?.secretAccessKey || ""}
+                  onChangeText={(v) =>
+                    setSettings({
+                      ...settings,
+                      s3Storage: { ...settings?.s3Storage, secretAccessKey: v },
+                    })
+                  }
+                  mode="outlined"
+                  secureTextEntry
+                  style={styles.input}
+                  theme={inputTheme}
+                  textColor={Colors.text}
+                />
+                <TextInput
+                  label="Endpoint URL (e.g., https://s3.amazonaws.com)"
+                  value={settings?.s3Storage?.endpoint || ""}
+                  onChangeText={(v) =>
+                    setSettings({
+                      ...settings,
+                      s3Storage: { ...settings?.s3Storage, endpoint: v },
+                    })
+                  }
+                  mode="outlined"
+                  style={styles.input}
+                  theme={inputTheme}
+                  textColor={Colors.text}
+                />
+                <TextInput
+                  label="Region (e.g., us-east-1)"
+                  value={settings?.s3Storage?.region || ""}
+                  onChangeText={(v) =>
+                    setSettings({
+                      ...settings,
+                      s3Storage: { ...settings?.s3Storage, region: v },
+                    })
+                  }
+                  mode="outlined"
+                  style={styles.input}
+                  theme={inputTheme}
+                  textColor={Colors.text}
+                />
+                <TextInput
+                  label="Bucket Name"
+                  value={settings?.s3Storage?.bucketName || ""}
+                  onChangeText={(v) =>
+                    setSettings({
+                      ...settings,
+                      s3Storage: { ...settings?.s3Storage, bucketName: v },
+                    })
+                  }
+                  mode="outlined"
+                  style={styles.input}
+                  theme={inputTheme}
+                  textColor={Colors.text}
+                />
+              </ScrollView>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                onPress={() => setS3DialogOpen(false)}
+                textColor={Colors.textSecondary}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onPress={() => {
+                  setS3DialogOpen(false);
+                  saveNotifications();
+                }}
+                textColor={Colors.primary}
+              >
+                {t("common.save")}
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+
+          {/* GitHub Disconnect Dialog */}
+          <Dialog
+            visible={confirmGithubDisconnect}
+            onDismiss={() => setConfirmGithubDisconnect(false)}
+            style={{ backgroundColor: Colors.card, borderRadius: 20 }}
+          >
+            <Dialog.Title style={{ color: Colors.text }}>
+              {t("settings.githubDisconnectTitle", "Disconnect GitHub")}
+            </Dialog.Title>
+            <Dialog.Content>
+              <Text style={{ color: Colors.textSecondary, marginBottom: 14 }}>
+                {t(
+                  "settings.githubDisconnectConfirm",
+                  "Are you sure you want to disconnect your GitHub account?",
+                )}
+              </Text>
+              <Text style={{ color: Colors.error }}>
+                {t(
+                  "settings.githubDisconnectWarning",
+                  "Automatic deployments will no longer work.",
+                )}
+              </Text>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                onPress={() => setConfirmGithubDisconnect(false)}
+                textColor={Colors.textSecondary}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button onPress={handleGithubDisconnect} textColor={Colors.error}>
+                {t("common.disconnect", "Disconnect")}
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+
+          {/* Clear History Dialog */}
+          <Dialog
+            visible={confirmClear}
+            onDismiss={() => setConfirmClear(false)}
+            style={{ backgroundColor: Colors.card, borderRadius: 20 }}
+          >
+            <Dialog.Title style={{ color: Colors.text }}>
+              {t("settings.clearConfirmTitle", "Clear History")}
+            </Dialog.Title>
+            <Dialog.Content>
+              <Text style={{ color: Colors.textSecondary, marginBottom: 14 }}>
+                {t(
+                  "settings.deleteOlderThan",
+                  "Delete deployment history older than:",
+                )}
+              </Text>
+              {/* Quick buttons for days since Select is tricky to map cleanly here without extra libs */}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {[7, 14, 30, 60, 90].map((days) => (
+                  <Button
+                    key={days}
+                    mode={clearDays === days ? "contained" : "outlined"}
+                    onPress={() => setClearDays(days)}
+                    compact
+                    textColor={clearDays === days ? "#fff" : Colors.primary}
+                    style={{ borderColor: Colors.primary }}
+                  >
+                    {days} days
+                  </Button>
+                ))}
+              </View>
+              <Text
+                style={{ color: Colors.error, marginTop: 14, fontSize: 13 }}
+              >
+                {t("settings.cantUndo", "This action cannot be undone.")}
+              </Text>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                onPress={() => setConfirmClear(false)}
+                textColor={Colors.textSecondary}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button onPress={handleClearHistory} textColor={Colors.error}>
+                {t("common.delete")}
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+
+          {/* Delete Account Dialog */}
+          <Dialog
+            visible={confirmDeleteAccount}
+            onDismiss={() => {
+              setConfirmDeleteAccount(false);
+              setDeleteAccountPassword("");
+            }}
+            style={{ backgroundColor: Colors.card, borderRadius: 20 }}
+          >
+            <Dialog.Title style={{ color: Colors.error }}>
+              Delete Account
+            </Dialog.Title>
+            <Dialog.Content>
+              <Text
+                style={{
+                  color: Colors.textSecondary,
+                  marginBottom: 14,
+                  lineHeight: 20,
+                }}
+              >
+                Permanently delete your account and all associated data. This
+                action cannot be undone. Enter your password to confirm.
+              </Text>
+              <TextInput
+                label={t("auth.password")}
+                value={deleteAccountPassword}
+                onChangeText={setDeleteAccountPassword}
+                mode="outlined"
+                secureTextEntry
+                style={styles.input}
+                outlineColor={Colors.error}
+                activeOutlineColor={Colors.error}
+                textColor={Colors.text}
+                theme={inputTheme}
+              />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button
+                onPress={() => {
+                  setConfirmDeleteAccount(false);
+                  setDeleteAccountPassword("");
+                }}
+                textColor={Colors.textSecondary}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onPress={handleDeleteAccount}
+                loading={deletingAccount}
+                disabled={!deleteAccountPassword || deletingAccount}
+                textColor={Colors.error}
+              >
+                Delete
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
       </ScrollView>
     </KeyboardAvoidingView>
   );

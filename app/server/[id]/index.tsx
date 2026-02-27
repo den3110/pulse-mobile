@@ -541,6 +541,38 @@ export default function ServerDetailScreen() {
           </Card.Content>
         </Card>
 
+        {/* Remote Terminal */}
+        <Card style={styles.card}>
+          <Card.Content>
+            <Pressable
+              onPress={() => router.push(`/server/${id}/terminal`)}
+              style={({ pressed }) => [
+                styles.nginxLink,
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="console"
+                size={24}
+                color={Colors.accent}
+              />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.nginxTitle}>
+                  {t("serverDetail.terminal")}
+                </Text>
+                <Text style={styles.nginxDesc}>
+                  {t("serverDetail.terminalDesc")}
+                </Text>
+              </View>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={24}
+                color={Colors.textSecondary}
+              />
+            </Pressable>
+          </Card.Content>
+        </Card>
+
         {/* Remote Command */}
         <Card style={styles.card}>
           <Card.Content>

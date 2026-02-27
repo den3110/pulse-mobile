@@ -446,8 +446,12 @@ export default function ProjectsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.filterRow}
-        contentContainerStyle={{ gap: 8 }}
+        style={{ flexGrow: 0, flexShrink: 0, marginBottom: 4 }}
+        contentContainerStyle={{
+          gap: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 4,
+        }}
       >
         {(["all", "running", "stopped", "failed", "idle"] as const).map((f) => (
           <Pressable
@@ -652,7 +656,7 @@ const createStyles = (Colors: any) =>
     },
     filterRow: {
       flexDirection: "row" as const,
-      flexGrow: 0,
+      gap: 8,
       paddingHorizontal: 12,
       marginBottom: 8,
     },

@@ -13,9 +13,11 @@ import { ThemeProvider, useAppTheme } from "../contexts/ThemeContext";
 import { ServerProvider } from "../contexts/ServerContext";
 import { NotificationProvider } from "../contexts/NotificationContext";
 import "../services/i18n";
+import { useTranslation } from "react-i18next";
 import NetworkMonitor from "../components/NetworkMonitor";
 
 function RootLayoutNav() {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -92,6 +94,51 @@ function RootLayoutNav() {
         <Stack.Screen
           name="admin/users"
           options={{ title: "User Management", headerBackTitle: "Settings" }}
+        />
+        {/* New Stack Screens moved from tabs */}
+        <Stack.Screen
+          name="bandwidth"
+          options={{ title: t("nav.bandwidth") || "Bandwidth" }}
+        />
+        <Stack.Screen
+          name="logs"
+          options={{ title: t("nav.logs") || "Log Studio" }}
+        />
+        <Stack.Screen
+          name="analytics"
+          options={{ title: t("nav.analytics") || "Analytics" }}
+        />
+        <Stack.Screen
+          name="approvals"
+          options={{ title: t("nav.approvals") || "Approvals" }}
+        />
+        <Stack.Screen
+          name="docker"
+          options={{ title: t("nav.docker") || "Docker" }}
+        />
+        <Stack.Screen
+          name="infrastructure"
+          options={{ title: t("nav.infrastructure") || "Infrastructure" }}
+        />
+        <Stack.Screen
+          name="pipelines"
+          options={{ title: t("nav.pipelines") || "Pipelines" }}
+        />
+        <Stack.Screen
+          name="secrets"
+          options={{ title: t("nav.secrets") || "Secrets Vault" }}
+        />
+        <Stack.Screen
+          name="test-runner"
+          options={{ title: t("nav.testRunner") || "Test Runner" }}
+        />
+        <Stack.Screen
+          name="vpn"
+          options={{ title: t("nav.vpn") || "VPN Manager" }}
+        />
+        <Stack.Screen
+          name="webhook-debug"
+          options={{ title: t("nav.webhookDebug") || "Webhook Debug" }}
         />
       </Stack>
     </>
